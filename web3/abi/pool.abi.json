@@ -1,9 +1,11 @@
 [
 	{ "inputs": [], "name": "AlreadyInitialized", "type": "error" },
+	{ "inputs": [], "name": "ArrayLengthMismatch", "type": "error" },
 	{ "inputs": [], "name": "AssetAlreadyRegistered", "type": "error" },
 	{ "inputs": [], "name": "AssetNotFound", "type": "error" },
 	{ "inputs": [], "name": "InsufficientAssets", "type": "error" },
 	{ "inputs": [], "name": "InvalidAllocationPercentage", "type": "error" },
+	{ "inputs": [], "name": "InvalidBundlerImplementation", "type": "error" },
 	{ "inputs": [], "name": "InvalidInitialization", "type": "error" },
 	{ "inputs": [], "name": "NewOwnerIsZeroAddress", "type": "error" },
 	{ "inputs": [], "name": "NoHandoverRequest", "type": "error" },
@@ -123,6 +125,25 @@
 			}
 		],
 		"name": "BatchFundsReturnedFromStrategy",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "oldBundler",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "newBundler",
+				"type": "address"
+			}
+		],
+		"name": "BundlerAddressUpdated",
 		"type": "event"
 	},
 	{
@@ -381,6 +402,15 @@
 	},
 	{
 		"inputs": [],
+		"name": "bundler",
+		"outputs": [
+			{ "internalType": "address", "name": "", "type": "address" }
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "cancelOwnershipHandover",
 		"outputs": [],
 		"stateMutability": "payable",
@@ -440,7 +470,7 @@
 		],
 		"name": "deposit",
 		"outputs": [
-			{ "internalType": "uint256", "name": "shares", "type": "uint256" }
+			{ "internalType": "uint256", "name": "", "type": "uint256" }
 		],
 		"stateMutability": "payable",
 		"type": "function"
@@ -498,7 +528,8 @@
 				"internalType": "address",
 				"name": "_strategyManager",
 				"type": "address"
-			}
+			},
+			{ "internalType": "address", "name": "_bundler", "type": "address" }
 		],
 		"name": "initialize",
 		"outputs": [],
@@ -559,9 +590,9 @@
 		],
 		"name": "mint",
 		"outputs": [
-			{ "internalType": "uint256", "name": "assets", "type": "uint256" }
+			{ "internalType": "uint256", "name": "", "type": "uint256" }
 		],
-		"stateMutability": "nonpayable",
+		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
@@ -881,6 +912,19 @@
 		"name": "transferOwnership",
 		"outputs": [],
 		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_newBundler",
+				"type": "address"
+			}
+		],
+		"name": "updateBundler",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{

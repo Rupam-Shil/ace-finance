@@ -6,9 +6,9 @@ export type Pool = {
 };
 
 export const POOL_ADDRESSES: Web3Address[] = [
-	'0x1527b9f572C49EC1D9240D66a882A2AaACceC8f8',
-	'0x265e2068955685c3676ea1c075257ab0bf5148b4',
-	'0x8a4dd22bcd307fca80db7eefb090e430badccf7f',
+	'0x319cb8bECEb0bC1eb961EeE1Eb95193c53149e21',
+	'0x698036f984fcf2225895748f4d80e25749437d24',
+	'0xa05d5c0De9e033954B532A40E7b43A23B92600f9',
 ];
 
 export const POOLS: Pool[] = [
