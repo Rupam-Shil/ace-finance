@@ -195,3 +195,28 @@
 	background: var(--chat-bubble-user-bg) !important;
 	color: var(--chat-bubble-user-color) !important;
 }
+
+
+.approvalOverlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.7);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 1000;
+}
+
+.approvalMessage {
+	background-color: var(--background);
+	padding: 20px 30px;
+	border-radius: 12px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	font-size: 1.1rem;
+	text-align: center;
+	color: var(--foreground);
+	max-width: 80%;
+}

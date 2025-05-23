@@ -1,8 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import React, { useEffect, useMemo, useCallback, useRef } from 'react';
+import React, {
+	useEffect,
+	useMemo,
+	useCallback,
+	useRef,
+	useState,
+} from 'react';
 import { useChat } from '@ai-sdk/react';
 import { toast } from 'sonner';
+import { ethers } from 'ethers';
 import ChatMessages from './components/ChatMessages';
 import ChatInput from './components/ChatInput';
 import styles from './chat.module.scss';
@@ -19,6 +26,7 @@ interface TransactionData {
 	tokenDecimals?: number;
 	tokenSymbol?: string;
 	from?: string;
+	amount?: string; // Amount for approval
 }
 
 declare global {
@@ -29,13 +37,25 @@ declare global {
 		sendTransactionToMetaMask?: (
 			txData: TransactionData
 		) => Promise<string>;
+		approveTokenAndSendTransaction?: (
+			txData: TransactionData
+		) => Promise<string>;
 	}
 }
+
+// ERC20 ABI for token approval
+const ERC20_ABI = [
+	'function approve(address spender, uint256 amount) returns (bool)',
+	'function allowance(address owner, address spender) view returns (uint256)',
+];
 
 const ChatView: React.FC = () => {
 	const { address } = useWeb3User();
 	const { messages: storedMessages, setMessages: setStoredMessages } =
 		useChatStore();
+
+	// State to track approval status
+	const [isApproving, setIsApproving] = useState(false);
 
 	const initialMessages = useMemo(() => {
 		// If there are stored messages, use those
@@ -223,6 +243,89 @@ const ChatView: React.FC = () => {
 					return sendToMetaMask(transData);
 				};
 
+				// Add a function to approve tokens before sending the transaction
+				window.approveTokenAndSendTransaction = async (
+					transData: TransactionData
+				) => {
+					try {
+						// Check if token address exists
+						if (!transData.tokenAddress) {
+							console.log(
+								'No token address found, proceeding with transaction directly'
+							);
+							return sendToMetaMask(transData);
+						}
+
+						setIsApproving(true);
+						toast.info('Checking token approval...');
+
+						// Create a provider
+						const provider = new ethers.BrowserProvider(
+							window.ethereum
+						);
+						const signer = await provider.getSigner();
+
+						// Create token contract instance
+						const tokenContract = new ethers.Contract(
+							transData.tokenAddress,
+							ERC20_ABI,
+							signer
+						);
+
+						// Get current allowance
+						const currentAllowance = await tokenContract.allowance(
+							address,
+							transData.to
+						);
+						console.log(
+							'Current allowance:',
+							currentAllowance.toString()
+						);
+
+						// Calculate required amount for approval (use MAX_UINT256 for unlimited approval)
+						const MAX_UINT256 = ethers.MaxUint256;
+
+						// Check if we need to approve
+						if (currentAllowance < BigInt(1)) {
+							// Send approval transaction
+							const approveTx = await tokenContract.approve(
+								transData.to,
+								MAX_UINT256
+							);
+							toast.info(
+								`Approval transaction sent: ${approveTx.hash.substring(0, 10)}...`
+							);
+
+							// Wait for approval to be mined
+							const approveReceipt = await approveTx.wait();
+							console.log(
+								'Approval transaction confirmed:',
+								approveReceipt
+							);
+							toast.success(
+								`${transData.tokenSymbol || 'Token'} approved successfully!`
+							);
+						} else {
+							console.log('Token already approved');
+							toast.info(
+								'Token already approved, proceeding with transaction...'
+							);
+						}
+
+						setIsApproving(false);
+
+						// Now send the actual transaction
+						return sendToMetaMask(transData);
+					} catch (error: any) {
+						setIsApproving(false);
+						console.error('Error during approval process:', error);
+						toast.error(
+							`Approval failed: ${error.message || 'Unknown error'}`
+						);
+						throw error;
+					}
+				};
+
 				// Just log the transaction data to console for debugging
 				console.log(
 					'Found transaction data, preparing to send to MetaMask:',
@@ -255,14 +358,16 @@ const ChatView: React.FC = () => {
 				const hasTransaction =
 					processTransactionFromMessage(lastMessage);
 
-				// If transaction was found, automatically send it to MetaMask
+				// If transaction was found, automatically approve tokens and send transaction
 				if (
 					hasTransaction &&
 					window.latestTransaction &&
-					window.sendTransactionToMetaMask
+					window.approveTokenAndSendTransaction
 				) {
 					window
-						.sendTransactionToMetaMask(window.latestTransaction)
+						.approveTokenAndSendTransaction(
+							window.latestTransaction
+						)
 						.then((hash) => {
 							toast.success('Transaction sent!', {
 								description: `Transaction hash: ${hash.substring(0, 10)}...`,
@@ -278,18 +383,19 @@ const ChatView: React.FC = () => {
 		}
 	}, [messages, processTransactionFromMessage]);
 
-	// Handle suggestion click from the chat messages component
-	const handleSuggestionClick = useCallback((suggestion: string) => {
-		append({ role: 'user', content: suggestion });
-	}, [append]);
-
 	return (
 		<div className={styles.chatContainer}>
+			{isApproving && (
+				<div className={styles.approvalOverlay}>
+					<div className={styles.approvalMessage}>
+						Approving tokens... Please confirm in your wallet.
+					</div>
+				</div>
+			)}
 			<div className={styles.chatContent}>
 				<ChatMessages
 					messages={messages}
 					isLoading={isLoading}
-					onSuggestionClick={handleSuggestionClick}
 				/>
 			</div>
 
